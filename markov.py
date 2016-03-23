@@ -52,18 +52,17 @@ def generateMarkovChain(str):
 
 		if len(parts) >= 2:
 			potential = parts[-2] + " " + parts[-1];
-			if potential in corpus:
-				phrase = potential;
-				output = str;
 		else:
-			potentials = [];
-			for key, value in corpus.items():
-				if parts[0] in key:
-					potentials.append(key);
+			potential = parts[-1];
 
-			if len(potentials) > 0:
-				phrase = potentials[random.randint(0, len(potentials)-1)];
-				output = phrase;
+		potentials = [];
+		for key, value in corpus.items():
+			if potential in key:
+				potentials.append(key);
+
+		if len(potentials) > 0:
+			phrase = potentials[random.randint(0, len(potentials)-1)];
+			output = phrase;
 
 	while corpus[phrase] and len(corpus[phrase]) > 0 and len(output) < 1000:
 		parts = phrase.split();
@@ -81,16 +80,13 @@ with open(CORPUS_FILENAME, 'r') as CORPUS_FILE:
 	for line in CORPUS_FILE:
 		if line:
 			addToCorpus(line);
-	#print(generateMarkovChain());
 
 @client.event
 async def on_ready():
-	print('Logged in as');
+	print('Logged in as:');
 	print(client.user.name);
 	print(client.user.id);
-	print('');
 	invite = await client.accept_invite(setting.INVITE);
-	print(invite);
 
 @client.event
 async def on_message(message):
@@ -102,11 +98,12 @@ async def on_message(message):
 	if message.content.startswith(setting.MARKOVADDCMD):
 		msgContent = message.content[len(setting.MARKOVADDCMD):].strip();
 
-		addToCorpus(msgContent);
-		
-		with open(CORPUS_FILENAME, 'a') as CORPUS_FILE:
-			CORPUS_FILE.write("\r\n" + msgContent);
+		if msgContent:
+			addToCorpus(msgContent);
+			
+			with open(CORPUS_FILENAME, 'a') as CORPUS_FILE:
+				CORPUS_FILE.write("\r\n" + msgContent);
 
-		await client.send_message(message.channel, "Added '" + msgContent + "' to the corpus.");
+			await client.send_message(message.channel, "Added '" + msgContent + "' to the corpus.");
 
 client.run(setting.EMAIL, setting.PASSWORD);
