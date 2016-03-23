@@ -62,7 +62,7 @@ def generateMarkovChain(str):
 
 		if len(potentials) > 0:
 			phrase = potentials[random.randint(0, len(potentials)-1)];
-			output = phrase;
+			output = str;
 
 	while corpus[phrase] and len(corpus[phrase]) > 0 and len(output) < 1000:
 		parts = phrase.split();
@@ -101,12 +101,16 @@ async def on_message(message):
 		msgContent = message.content[len(setting.MARKOVADDCMD):].strip();
 
 		if msgContent:
-			addToCorpus(msgContent);
+			msgContent.replace("\r", "");
+			contents = msgContent.split("\n");
+
+			for i in range(0, len(contents)):
+				addToCorpus(contents[i]);
 			
 			with open(CORPUS_FILENAME, 'a') as CORPUS_FILE:
 				CORPUS_FILE.write("\r\n" + msgContent);
 
-			await client.send_message(message.channel, "Added '" + msgContent + "' to the corpus.");
+			await client.send_message(message.channel, "Added '" + msgContent + "' to the corpus. Reloading is not needed with this command.");
 
 	if message.content.startswith(setting.MARKOVRELOADCMD):
 		if message.author.name in setting.ELEVATED_USERS:
