@@ -1,0 +1,8 @@
+CORPUS_FILENAME = "/path/to/corpus.txt";
+
+EMAIL = "user@example.com";
+PASSWORD = "discord_password";
+INVITE = "https://discord.gg/inviteid";
+
+MARKOVCMD = "!tbpmarkov";
+MARKOVADDCMD = "!tbpaddmarkov";
