@@ -76,10 +76,12 @@ def generateMarkovChain(str):
 	return output.strip();
 
 
-with open(CORPUS_FILENAME, 'r') as CORPUS_FILE:
-	for line in CORPUS_FILE:
-		if line:
-			addToCorpus(line);
+def loadMarkov():
+	with open(CORPUS_FILENAME, 'r') as CORPUS_FILE:
+		for line in CORPUS_FILE:
+			if line:
+				addToCorpus(line);
+loadMarkov();
 
 @client.event
 async def on_ready():
@@ -105,5 +107,11 @@ async def on_message(message):
 				CORPUS_FILE.write("\r\n" + msgContent);
 
 			await client.send_message(message.channel, "Added '" + msgContent + "' to the corpus.");
+
+	if message.content.startswith(setting.MARKOVRELOADCMD):
+		if message.author.name in setting.ELEVATED_USERS:
+			corpus.clear();
+			loadMarkov();
+			await client.send_message(message.channel, "Reloaded corpus.");
 
 client.run(setting.EMAIL, setting.PASSWORD);
