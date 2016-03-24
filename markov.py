@@ -1,4 +1,5 @@
 import random;
+import os;
 
 import discord;
 import asyncio;
@@ -9,6 +10,7 @@ client = discord.Client();
 
 CORPUS_FILENAME = setting.CORPUS_FILENAME;
 corpus = {};
+CORPUS_FILE_SIZE = os.path.getsize(CORPUS_FILENAME);
 
 def addToCorpus(line):
 	words = line.split();
@@ -83,6 +85,13 @@ def loadMarkov():
 				addToCorpus(line);
 loadMarkov();
 
+def updateCorpusFilesize():
+	global CORPUS_FILE_SIZE;
+	old_corpus_size = CORPUS_FILE_SIZE;
+	CORPUS_FILE_SIZE = os.path.getsize(CORPUS_FILENAME);
+
+	return old_corpus_size;
+
 @client.event
 async def on_ready():
 	print('Logged in as:');
@@ -93,12 +102,19 @@ async def on_ready():
 @client.event
 async def on_message(message):
 	if message.content.startswith(setting.MARKOVCMD):
+		if message.channel.is_private:
+			print("Generating chain for " + message.author.name + " in a direct message")
+		else:
+			print("Generating chain for " + message.author.name + " in " + message.channel.name);
+
 		tmp = await client.send_message(message.channel, 'Generating chain...');
 		msgContent = message.content[len(setting.MARKOVCMD):].strip();
 		await client.edit_message(tmp, generateMarkovChain(msgContent));
 	
 	if message.content.startswith(setting.MARKOVADDCMD):
 		msgContent = message.content[len(setting.MARKOVADDCMD):].strip();
+
+		print(message.author.name + " contributed " + '{:,}'.format(len(msgContent)) + " bytes to the corpus");
 
 		if msgContent:
 			msgContent.replace("\r", "");
@@ -110,12 +126,25 @@ async def on_message(message):
 			with open(CORPUS_FILENAME, 'a') as CORPUS_FILE:
 				CORPUS_FILE.write("\r\n" + msgContent);
 
-			await client.send_message(message.channel, "Added '" + msgContent + "' to the corpus. Reloading is not needed with this command.");
+			old_corpus_size = updateCorpusFilesize();
+
+			await client.send_message(message.channel, "**Added** *'" + msgContent + "'* **to the corpus.** \n\nReloading is not needed with this command.");
 
 	if message.content.startswith(setting.MARKOVRELOADCMD):
 		if message.author.name in setting.ELEVATED_USERS:
+			print(message.author.name + " reloaded the corpus");
+
+			old_corpus_size = updateCorpusFilesize();
+
 			corpus.clear();
 			loadMarkov();
-			await client.send_message(message.channel, "Reloaded corpus.");
+
+			await client.send_message(message.channel, "Reloaded corpus.\nCorpus size changed by **" + str(round((CORPUS_FILE_SIZE - old_corpus_size)/1024, 2)) + " KB**.\nCorpus is currently **" + str(round(CORPUS_FILE_SIZE/1024, 2)) + " KB**");
+
+	if message.content.startswith(setting.MARKOVSTATSCMD):
+		msgContent = "Corpus size: **" + str(round((os.path.getsize(CORPUS_FILENAME))/1024, 2)) + " KB**";
+		msgContent += "\nCorpus entries: **" + '{:,}'.format(len(corpus)) + "**";
+
+		await client.send_message(message.channel, msgContent);
 
 client.run(setting.EMAIL, setting.PASSWORD);

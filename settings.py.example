@@ -7,4 +7,6 @@ INVITE = "https://discord.gg/inviteid";
 MARKOVCMD = "!tbpmarkov";
 MARKOVADDCMD = "!tbpaddmarkov";
 MARKOVRELOADCMD = "!tbpreloadmarkov";
+MARKOVSTATSCMD = "!tbpstatsmarkov";
+
 ELEVATED_USERS = ["DiscordUser10293", "DiscordUser10294"];
