@@ -8,5 +8,6 @@ MARKOVCMD = "!tbpmarkov";
 MARKOVADDCMD = "!tbpaddmarkov";
 MARKOVRELOADCMD = "!tbpreloadmarkov";
 MARKOVSTATSCMD = "!tbpstatsmarkov";
+MARKOVDEBUGCMD = "!tbpdebugmarkov";
 
 ELEVATED_USERS = ["DiscordUser10293", "DiscordUser10294"];

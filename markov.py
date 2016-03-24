@@ -45,12 +45,12 @@ def addToCorpus(line):
 			nextWord = "";
 
 
-def generateMarkovChain(str):
+def generateMarkovChain(inputStr, debug=0):
 	phrase = random.choice(list(corpus.keys()));
 	output = phrase;
 
-	if str:
-		parts = str.split();
+	if inputStr:
+		parts = inputStr.split();
 
 		if len(parts) >= 2:
 			potential = parts[-2] + " " + parts[-1];
@@ -64,16 +64,35 @@ def generateMarkovChain(str):
 
 		if len(potentials) > 0:
 			phrase = potentials[random.randint(0, len(potentials)-1)];
-			output = str;
+			output = inputStr;
 
-	while corpus[phrase] and len(corpus[phrase]) > 0 and len(output) < 1000:
-		parts = phrase.split();
+	if not debug:
+		while corpus[phrase] and len(corpus[phrase]) > 0 and len(output) < 1000:
+			parts = phrase.split();
 
-		nextWord = corpus[phrase][random.randint(0, len(corpus[phrase])-1)];
+			nextWord = corpus[phrase][random.randint(0, len(corpus[phrase])-1)];
 
-		output += (" " + nextWord)
+			output += (" " + nextWord)
 
-		phrase = parts[1] + " " + nextWord;
+			phrase = parts[1] + " " + nextWord;
+	else:
+		parts = inputStr.split();
+
+		if len(parts) == 2:
+			if inputStr not in corpus:
+				output = "This phrase does not exist in the corpus.";
+			else:
+				available = ", ".join(corpus[inputStr]);
+
+				if len(available) > 2048:
+					available = len(corpus[inputStr]);
+					output = "***" + inputStr + "*** has too many entries to list *(" + str(available) + ")*";
+				else:
+					output = "***" + inputStr + "*** **can end with the following *" + str(len(corpus[inputStr])) + "* words:** *";
+					output += available;
+					output += "*";
+		else:
+			output = "Invalid debug command, input *must* be 2 words in length.";
 
 	return output.strip();
 
@@ -146,5 +165,15 @@ async def on_message(message):
 		msgContent += "\nCorpus entries: **" + '{:,}'.format(len(corpus)) + "**";
 
 		await client.send_message(message.channel, msgContent);
+
+	if message.content.startswith(setting.MARKOVDEBUGCMD):
+		if message.author.name in setting.ELEVATED_USERS:
+			msgParts = message.content.split();
+
+			if len(msgParts) > 1:
+				if msgParts[1] == "canEnd":
+					tmp = await client.send_message(message.channel, 'Generating debug message...');
+					msgContent = message.content[len(setting.MARKOVDEBUGCMD + " canEnd"):].strip();
+					await client.edit_message(tmp, generateMarkovChain(msgContent, 1));
 
 client.run(setting.EMAIL, setting.PASSWORD);
