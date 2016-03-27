@@ -1,179 +1,131 @@
 import random;
 import os;
 
-import discord;
-import asyncio;
-
 import settings as setting;
 
-client = discord.Client();
+class Corpus():
+	def __init__(self, filename=setting.CORPUS_FILENAME):
+		self.corpus = {};
+		self.filesize = 0;
+		self.filename = filename;
 
-CORPUS_FILENAME = setting.CORPUS_FILENAME;
-corpus = {};
-CORPUS_FILE_SIZE = os.path.getsize(CORPUS_FILENAME);
+		self.load();
 
-def addToCorpus(line):
-	words = line.split();
+	def load(self):
+		with open(self.filename, 'r', encoding="utf-8") as file:
+			self.filesize = os.path.getsize(self.filename);
 
-	if len(words) < 2:
-		return;
+			for line in file:
+				if line:
+					self.add(line);
 
-	phrase = words[0] + " " + words[1];
+	def add(self, line):
+		corpus = self.corpus;
 
-	if len(words) == 2:
-		if phrase not in corpus:
-			corpus[phrase] = [];
+		words = line.split();
 
-		return;
+		if len(words) < 2:
+			return;
 
-	nextWord = words[2];
+		phrase = words[0] + " " + words[1];
 
-	for i in range(1, len(words)):
-		if phrase not in corpus:
-			corpus[phrase] = [];
+		if len(words) == 2:
+			if phrase not in corpus:
+				corpus[phrase] = [];
 
-		if not nextWord:
-			continue;
+			return;
 
-		corpus[phrase].append(nextWord);
+		nextWord = words[2];
 
-		phrase = words[i] + " " + words[i+1];
+		for i in range(1, len(words)):
+			if phrase not in corpus:
+				corpus[phrase] = [];
 
-		if i+2 < len(words):
-			nextWord = words[i+2];
-		else:
-			nextWord = "";
+			if not nextWord:
+				continue;
 
+			corpus[phrase].append(nextWord);
 
-def generateMarkovChain(inputStr, debug=0):
-	phrase = random.choice(list(corpus.keys()));
-	output = phrase;
+			phrase = words[i] + " " + words[i+1];
 
-	if inputStr:
-		parts = inputStr.split();
-
-		if len(parts) >= 2:
-			potential = parts[-2] + " " + parts[-1];
-		else:
-			potential = parts[-1];
-
-		potentials = [];
-		for key, value in corpus.items():
-			if potential in key:
-				potentials.append(key);
-
-		if len(potentials) > 0:
-			phrase = potentials[random.randint(0, len(potentials)-1)];
-			output = inputStr;
-
-	if not debug:
-		while corpus[phrase] and len(corpus[phrase]) > 0 and len(output) < 1000:
-			parts = phrase.split();
-
-			nextWord = corpus[phrase][random.randint(0, len(corpus[phrase])-1)];
-
-			output += (" " + nextWord)
-
-			phrase = parts[1] + " " + nextWord;
-	else:
-		parts = inputStr.split();
-
-		if len(parts) == 2:
-			if inputStr not in corpus:
-				output = "This phrase does not exist in the corpus.";
+			if i+2 < len(words):
+				nextWord = words[i+2];
 			else:
-				available = ", ".join(corpus[inputStr]);
+				nextWord = "";
 
-				if len(available) > 2048:
-					available = len(corpus[inputStr]);
-					output = "***" + inputStr + "*** has too many entries to list *(" + str(available) + ")*";
+		self.corpus = corpus;
+
+	def generate(self, inputStr=False, debug=False):
+		corpus = self.corpus;
+
+		phrase = random.choice(list(corpus.keys()));
+		output = phrase;
+
+		if inputStr:
+			parts = inputStr.split();
+
+			if len(parts) >= 2:
+				potential = parts[-2] + " " + parts[-1];
+			else:
+				potential = parts[-1];
+
+			potentials = [];
+			for key, value in corpus.items():
+				if potential in key:
+					potentials.append(key);
+
+			if len(potentials) > 0:
+				phrase = potentials[random.randint(0, len(potentials)-1)];
+				output = inputStr;
+
+		if not debug:
+			while corpus[phrase] and len(corpus[phrase]) > 0 and len(output) < 1000:
+				parts = phrase.split();
+
+				nextWord = corpus[phrase][random.randint(0, len(corpus[phrase])-1)];
+
+				output += (" " + nextWord)
+
+				phrase = parts[1] + " " + nextWord;
+		else:
+			parts = inputStr.split();
+
+			if len(parts) == 2:
+				if inputStr not in corpus:
+					output = "This phrase does not exist in the corpus.";
 				else:
-					output = "***" + inputStr + "*** **can end with the following *" + str(len(corpus[inputStr])) + "* words:** *";
-					output += available;
-					output += "*";
-		else:
-			output = "Invalid debug command, input *must* be 2 words in length.";
+					available = ", ".join(corpus[inputStr]);
 
-	return output.strip();
+					if len(available) > 2048:
+						available = len(corpus[inputStr]);
+						output = "***" + inputStr + "*** has too many entries to list *(" + str(available) + ")*";
+					else:
+						output = "***" + inputStr + "*** **can end with the following *" + str(len(corpus[inputStr])) + "* words:** *";
+						output += available;
+						output += "*";
+			else:
+				output = "Invalid debug command, input *must* be 2 words in length.";
 
+		return output.strip();
 
-def loadMarkov():
-	with open(CORPUS_FILENAME, 'r') as CORPUS_FILE:
-		for line in CORPUS_FILE:
-			if line:
-				addToCorpus(line);
-loadMarkov();
+	def reload(self):
+		self.corpus.clear();
+		self.load();
 
-def updateCorpusFilesize():
-	global CORPUS_FILE_SIZE;
-	old_corpus_size = CORPUS_FILE_SIZE;
-	CORPUS_FILE_SIZE = os.path.getsize(CORPUS_FILENAME);
+	def __str__(self):
+		return self.generate();
 
-	return old_corpus_size;
+	def __int__(self):
+		return len(self.corpus);
 
-@client.event
-async def on_ready():
-	print('Logged in as:');
-	print(client.user.name);
-	print(client.user.id);
-	invite = await client.accept_invite(setting.INVITE);
+	def __len__(self):
+		return len(self.corpus);
 
-@client.event
-async def on_message(message):
-	if message.content.startswith(setting.MARKOVCMD):
-		if message.channel.is_private:
-			print("Generating chain for " + message.author.name + " in a direct message")
-		else:
-			print("Generating chain for " + message.author.name + " in " + message.channel.name);
+	def __getitem__(self, index):
+		if index not in self.corpus:
+			return None;
 
-		tmp = await client.send_message(message.channel, 'Generating chain...');
-		msgContent = message.content[len(setting.MARKOVCMD):].strip();
-		await client.edit_message(tmp, generateMarkovChain(msgContent));
-	
-	if message.content.startswith(setting.MARKOVADDCMD):
-		msgContent = message.content[len(setting.MARKOVADDCMD):].strip();
+		return self.corpus[index];
 
-		print(message.author.name + " contributed " + '{:,}'.format(len(msgContent)) + " bytes to the corpus");
-
-		if msgContent:
-			msgContent.replace("\r", "");
-			contents = msgContent.split("\n");
-
-			for i in range(0, len(contents)):
-				addToCorpus(contents[i]);
-			
-			with open(CORPUS_FILENAME, 'a') as CORPUS_FILE:
-				CORPUS_FILE.write("\r\n" + msgContent);
-
-			old_corpus_size = updateCorpusFilesize();
-
-			await client.send_message(message.channel, "**Added** *'" + msgContent + "'* **to the corpus.** \n\nReloading is not needed with this command.");
-
-	if message.content.startswith(setting.MARKOVRELOADCMD):
-		if message.author.name in setting.ELEVATED_USERS:
-			print(message.author.name + " reloaded the corpus");
-
-			old_corpus_size = updateCorpusFilesize();
-
-			corpus.clear();
-			loadMarkov();
-
-			await client.send_message(message.channel, "Reloaded corpus.\nCorpus size changed by **" + str(round((CORPUS_FILE_SIZE - old_corpus_size)/1024, 2)) + " KB**.\nCorpus is currently **" + str(round(CORPUS_FILE_SIZE/1024, 2)) + " KB**");
-
-	if message.content.startswith(setting.MARKOVSTATSCMD):
-		msgContent = "Corpus size: **" + str(round((os.path.getsize(CORPUS_FILENAME))/1024, 2)) + " KB**";
-		msgContent += "\nCorpus entries: **" + '{:,}'.format(len(corpus)) + "**";
-
-		await client.send_message(message.channel, msgContent);
-
-	if message.content.startswith(setting.MARKOVDEBUGCMD):
-		if message.author.name in setting.ELEVATED_USERS:
-			msgParts = message.content.split();
-
-			if len(msgParts) > 1:
-				if msgParts[1] == "canEnd":
-					tmp = await client.send_message(message.channel, 'Generating debug message...');
-					msgContent = message.content[len(setting.MARKOVDEBUGCMD + " canEnd"):].strip();
-					await client.edit_message(tmp, generateMarkovChain(msgContent, 1));
-
-client.run(setting.EMAIL, setting.PASSWORD);
+	def __setitem__(self, index, value):
+		self.corpus[index] = value;
