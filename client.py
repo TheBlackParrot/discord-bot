@@ -138,6 +138,7 @@ async def on_message(message):
 				ping.msgObj = tmp;
 			elif command.subcommand == "pong" and message.author.id == client.user.id:
 				ping.pong();
+				print("Latency checked: " + str(int(ping)) + "ms");
 				await client.edit_message(ping.msgObj, 'Pong!\nLatency: **' + str(int(ping)) + 'ms**');
 
 def close():
