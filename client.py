@@ -15,6 +15,9 @@ corpus = Corpus();
 
 from phrases import getAPhrase;
 
+from ping import PingPong;
+ping = None;
+
 import settings as setting;
 from settings import Commands;
 cmds = Commands();
@@ -115,7 +118,7 @@ async def on_message(message):
 
 				await client.send_message(message.channel, msgContent);
 
-		if command.command == "phrase":
+		elif command.command == "phrase":
 			if message.channel.is_private:
 				print("Fetching phrase for " + message.author.name + " in a direct message")
 			else:
@@ -124,6 +127,18 @@ async def on_message(message):
 			tmp = await client.send_message(message.channel, '*Fetching phrase...*');
 
 			await client.edit_message(tmp, getAPhrase());
+
+		elif command.command == "ping":
+			global ping;
+
+			if not command.subcommand:
+				ping = PingPong();
+
+				tmp = await client.send_message(message.channel, setting.CMD_START + ' ping pong');
+				ping.msgObj = tmp;
+			elif command.subcommand == "pong" and message.author.id == client.user.id:
+				ping.pong();
+				await client.edit_message(ping.msgObj, 'Pong!\nLatency: **' + str(int(ping)) + 'ms**');
 
 def close():
 	client.logout();

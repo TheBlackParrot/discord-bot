@@ -18,7 +18,12 @@ class Commands():
 				"reload",
 				"stats"
 			],
+
 			"phrase": []
+
+			"ping": [
+				"pong"
+			]
 		};
 
 	def __str__(self):
