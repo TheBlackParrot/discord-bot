@@ -13,6 +13,8 @@ client = discord.Client();
 from markov import Corpus;
 corpus = Corpus();
 
+from phrases import getAPhrase;
+
 import settings as setting;
 from settings import Commands;
 cmds = Commands();
@@ -113,17 +115,15 @@ async def on_message(message):
 
 				await client.send_message(message.channel, msgContent);
 
-	'''
-	if message.content.startswith(setting.MARKOVDEBUGCMD):
-		if message.author.name in setting.ELEVATED_USERS:
-			msgParts = message.content.split();
+		if command.command == "phrase":
+			if message.channel.is_private:
+				print("Fetching phrase for " + message.author.name + " in a direct message")
+			else:
+				print("Fetching phrase for " + message.author.name + " in " + message.channel.name);
 
-			if len(msgParts) > 1:
-				if msgParts[1] == "canEnd":
-					tmp = await client.send_message(message.channel, 'Generating debug message...');
-					msgContent = message.content[len(setting.MARKOVDEBUGCMD + " canEnd"):].strip();
-					await client.edit_message(tmp, corpus.generate(msgContent, 1));
-	'''
+			tmp = await client.send_message(message.channel, '*Fetching phrase...*');
+
+			await client.edit_message(tmp, getAPhrase());
 
 def close():
 	client.logout();

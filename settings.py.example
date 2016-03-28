@@ -6,6 +6,8 @@ INVITE = "https://discord.gg/inviteid";
 
 CMD_START = "!tbp";
 
+PHRASES_URL = "http://phrases.example.com/?raw=1";
+
 ELEVATED_USERS = ["DiscordUser10293", "DiscordUser10294"];
 
 class Commands():
@@ -15,8 +17,18 @@ class Commands():
 				"add",
 				"reload",
 				"stats"
-			];
+			],
+			"phrase": []
 		};
+
+	def __str__(self):
+		output = ""
+		for cmd, sublist in self.commands.items():
+			output += cmd + ":\n";
+			output += ', '.join(i for i in sublist);
+			output += "\n";
+
+		return output.strip();
 
 	def isCommand(self, command=None, subcommand=None):
 		if command:
