@@ -136,12 +136,11 @@ async def on_message(message):
 			if not command.subcommand:
 				ping = PingPong();
 
-				tmp = await client.send_message(message.channel, setting.CMD_START + ' ping pong');
-				ping.msgObj = tmp;
+				await client.send_message(message.channel, setting.CMD_START + ' ping pong');
 			elif command.subcommand == "pong" and message.author.id == client.user.id:
 				ping.pong();
 				print("Latency checked: " + str(int(ping)) + "ms");
-				await client.edit_message(ping.msgObj, 'Pong!\nLatency: **' + str(int(ping)) + 'ms**');
+				await client.edit_message(message, 'Pong!\nLatency: **' + str(int(ping)) + 'ms**');
 
 		elif command.command == "color":
 			if command.subcommand == "doc":
@@ -150,7 +149,10 @@ async def on_message(message):
 				if command.content:
 					color = ColorPreview(command.content);
 
-					await client.send_file(message.channel, color.stream, filename="color.png");
+					try:
+						await client.send_file(message.channel, color.stream, filename="color.png");
+					except discord.Forbidden:
+						await client.send_message(message.channel, "Cannot attach files in this channel.");
 
 def close():
 	client.logout();
