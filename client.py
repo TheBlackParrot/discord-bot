@@ -18,6 +18,8 @@ from phrases import getAPhrase;
 from ping import PingPong;
 ping = None;
 
+from color import ColorPreview;
+
 import settings as setting;
 from settings import Commands;
 cmds = Commands();
@@ -140,6 +142,15 @@ async def on_message(message):
 				ping.pong();
 				print("Latency checked: " + str(int(ping)) + "ms");
 				await client.edit_message(ping.msgObj, 'Pong!\nLatency: **' + str(int(ping)) + 'ms**');
+
+		elif command.command == "color":
+			if command.subcommand == "doc":
+				await client.send_message(message.channel, "Please use the syntax used in **Pillow**:\nhttp://pillow.readthedocs.org/en/3.1.x/reference/ImageColor.html");
+			else:
+				if command.content:
+					color = ColorPreview(command.content);
+
+					await client.send_file(message.channel, color.stream, filename="color.png");
 
 def close():
 	client.logout();

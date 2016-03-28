@@ -23,6 +23,10 @@ class Commands():
 
 			"ping": [
 				"pong"
+			],
+
+			"color": [
+				"doc"
 			]
 		};
 
