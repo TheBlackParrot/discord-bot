@@ -11,6 +11,10 @@ PHRASES_URL = "http://phrases.example.com/?raw=1";
 ELEVATED_USERS = ["DiscordUser10293", "DiscordUser10294"];
 
 class Commands():
+	'''
+	The permit command has no external script, as its content resides in various places in client.py.
+	'''
+	
 	def __init__(self):
 		self.commands = {
 			"markov": [
@@ -19,7 +23,7 @@ class Commands():
 				"stats"
 			],
 
-			"phrase": []
+			"phrase": [],
 
 			"ping": [
 				"pong"
@@ -27,7 +31,14 @@ class Commands():
 
 			"color": [
 				"doc"
-			]
+			],
+
+			"get": [
+				"channelID",
+				"userID"
+			],
+
+			"permit": []
 		};
 
 	def __str__(self):

@@ -4,7 +4,7 @@ import signal
 import sys
 def signal_handler(signal, frame):
 	sys.exit(0);
-signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGINT, signal_handler);
 
 import discord;
 import asyncio;
@@ -23,6 +23,8 @@ from color import ColorPreview;
 import getid;
 # what the hell even is python
 getid.client = client;
+
+import json;
 
 import settings as setting;
 from settings import Commands;
@@ -64,6 +66,13 @@ class CommandMessage():
 	def content(self):
 		return self.content;
 
+permittedChannels = [];
+try:
+	with open("permittedChannels.json", 'r', encoding="utf-8") as file:
+		permittedChannels = json.load(file);
+except FileNotFoundError:
+	print("Permitted channel database doesn't exist, please use " + setting.CMD_START + " permit on a channel.");
+
 @client.event
 async def on_ready():
 	print('Logged in as:');
@@ -77,7 +86,23 @@ async def on_message(message):
 		command = CommandMessage(message.content[len(setting.CMD_START):].strip());
 
 		if not command.command:
-			await client.send_message(message.channel, str(cmds));
+			if message.channel.id in permittedChannels:
+				await client.send_message(message.channel, str(cmds));
+				return;
+			else:
+				return;
+
+		if command.command == "permit":
+			if message.author.name in setting.ELEVATED_USERS:
+				if message.channel.id not in permittedChannels:
+					permittedChannels.append(message.channel.id);
+					with open('permittedChannels.json', 'w') as file:
+						json.dump(permittedChannels, file);
+
+					await client.send_message(message.channel, "Now permitted to use *" + message.channel.name + "*");
+
+		# THIS RESIDES HERE TO ALLOW PERMIT AND NOTHING ELSE
+		if message.channel.id not in permittedChannels:
 			return;
 
 		if command.command == "markov":
