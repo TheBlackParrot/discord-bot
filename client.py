@@ -20,6 +20,10 @@ ping = None;
 
 from color import ColorPreview;
 
+import getid;
+# what the hell even is python
+getid.client = client;
+
 import settings as setting;
 from settings import Commands;
 cmds = Commands();
@@ -145,14 +149,36 @@ async def on_message(message):
 		elif command.command == "color":
 			if command.subcommand == "doc":
 				await client.send_message(message.channel, "Please use the syntax used in **Pillow**:\nhttp://pillow.readthedocs.org/en/3.1.x/reference/ImageColor.html");
-			else:
-				if command.content:
-					color = ColorPreview(command.content);
+				return;
 
-					try:
-						await client.send_file(message.channel, color.stream, filename="color.png");
-					except discord.Forbidden:
-						await client.send_message(message.channel, "Cannot attach files in this channel.");
+			if command.content:
+				color = ColorPreview(command.content);
+
+				try:
+					await client.send_file(message.channel, color.stream, filename="color.png");
+				except discord.Forbidden:
+					await client.send_message(message.channel, "Cannot attach files in this channel.");
+
+		elif command.command == "get":
+			if command.subcommand == "userID":
+				if not command.content:
+					return;
+
+				uid = getid.getUserID(getid.findUserByName(command.content, message.server));
+				if uid:
+					await client.send_message(message.channel, "User ID for *" + command.content + "* is **" + str(uid) + "**");
+				else:
+					await client.send_message(message.channel, "User could not be found.");
+
+			if command.subcommand == "channelID":
+				if not command.content:
+					return;
+
+				uid = getid.getChannelID(getid.findChannelByName(command.content, message.server));
+				if uid:
+					await client.send_message(message.channel, "Channel ID for *" + command.content + "* is **" + str(uid) + "**");
+				else:
+					await client.send_message(message.channel, "Channel could not be found.");
 
 def close():
 	client.logout();
