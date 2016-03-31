@@ -26,6 +26,7 @@ getid.client = client;
 
 import json;
 
+import time;
 from slots import Slots;
 slots = Slots();
 
@@ -238,6 +239,9 @@ async def on_message(message):
 			slots.initUser(message.author.id);
 
 			if command.subcommand == "spin":
+				if int(time.time()) < slots.getCooldown(message.author.id) + 15:
+					return;
+
 				if not command.content:
 					bet = 50;
 				else:

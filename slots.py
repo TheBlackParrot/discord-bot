@@ -1,4 +1,5 @@
 import random;
+import time;
 import json;
 import collections;
 
@@ -66,6 +67,8 @@ class Slots():
 		if output["match_amount"] > 1:
 			output["winnings"] = bet * (pow(output["match_amount"]-1, 3)) * 2;
 
+		self.updateCooldown(userid);
+		
 		return output;
 
 	def save(self, data):
@@ -85,9 +88,20 @@ class Slots():
 		except:
 			print("Could not save slots database.");
 
+	def updateCooldown(self, userid):
+		if userid in self.slotsDB:
+			self.slotsDB[userid]["cooldown"] = int(time.time());
+
+	def getCooldown(self, userid):
+		if userid not in self.slotsDB:
+			return 0;
+
+		return self.slotsDB[userid]["cooldown"];
+
 	def initUser(self, userid):
 		if userid not in self.slotsDB:
 			self.slotsDB[userid] = {};
+			self.slotsDB[userid]["cooldown"] = 0;
 			self.slotsDB[userid]["tokens"] = 1000;
 
 	def resetUser(self, userid):
