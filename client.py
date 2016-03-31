@@ -1,38 +1,44 @@
 import atexit;
+import signal;
+import sys;
+import discord;
+import asyncio;
+from markov import Corpus;
+from phrases import getAPhrase;
+from ping import PingPong;
+from color import ColorPreview;
+import getid;
+import json;
+import time;
+from slots import Slots;
+import settings as setting;
+from settings import Commands;
+from ctypes.util import find_library;
+from audio import VoiceObjInfo;
 
-import signal
-import sys
 def signal_handler(signal, frame):
 	sys.exit(0);
 signal.signal(signal.SIGINT, signal_handler);
 
-import discord;
-import asyncio;
 client = discord.Client();
 
-from markov import Corpus;
 corpus = Corpus();
 
-from phrases import getAPhrase;
-
-from ping import PingPong;
 ping = None;
 
-from color import ColorPreview;
+slots = Slots();
 
-import getid;
+cmds = Commands();
+
 # what the hell even is python
 getid.client = client;
 
-import json;
+if not discord.opus.is_loaded():
+	discord.opus.load_opus(find_library("opus"));
 
-import time;
-from slots import Slots;
-slots = Slots();
-
-import settings as setting;
-from settings import Commands;
-cmds = Commands();
+VoiceObj = None;
+VoiceObjPlayer = None;
+voice_info = VoiceObjInfo();
 
 # e.g. to parse !tbp markov add
 class CommandMessage():
@@ -281,6 +287,85 @@ async def on_message(message):
 
 			if command.subcommand == "tokens":
 				await client.send_message(message.channel, mention + "You have **" + str(slots.getTokens(message.author.id)) + " tokens**.");
+
+		elif command.command == "audio":
+			global VoiceObj;
+			global VoiceObjPlayer;
+
+			if command.subcommand == "join":
+				if not command.content:
+					return;
+
+				if message.author.name not in setting.ELEVATED_USERS:
+					return;
+
+				channel = getid.findChannelByName(command.content, message.server);
+				if not channel:
+					await client.send_message(message.channel, "Channel does not exist");
+					return;
+
+				if str(channel.type) != "voice":
+					await client.send_message(message.channel, "Channel is not a voice channel");
+					return;
+
+				if VoiceObj:
+					if VoiceObj.is_connected():
+						await VoiceObj.disconnect();
+
+				VoiceObj = await client.join_voice_channel(channel);
+
+			if command.subcommand == "play":
+				if not command.content:
+					return;
+
+				if not VoiceObj:
+					return;
+
+				if not VoiceObj.is_connected():
+					return;
+
+				if message.server.id != VoiceObj.channel.server.id:
+					return;
+
+				if VoiceObjPlayer:
+					if VoiceObjPlayer.is_playing():
+						try:
+							await client.delete_message(message);
+						except:
+							pass;
+
+						await client.send_message(message.channel, "Currently playing audio, please wait for it to finish.");
+						return;
+
+				# create_ffmpeg_player doesn't seem very fleshed out at the moment?
+				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content);
+				VoiceObjPlayer.start();
+
+				voice_info.submitter = message.author.id;
+
+				try:
+					await client.delete_message(message);
+				except:
+					pass;
+
+				await client.send_message(message.channel, "Playing **" + VoiceObjPlayer.title + "**");
+
+			if command.subcommand == "stop":
+				if not VoiceObj:
+					return;
+
+				if not VoiceObj.is_connected():
+					return;
+
+				if message.server.id != VoiceObj.channel.server.id:
+					return;
+
+				if VoiceObjPlayer:
+					if VoiceObjPlayer.is_playing():
+						if voice_info.submitter == message.author.id:
+							VoiceObjPlayer.stop();
+
+
 
 def close():
 	client.logout();
