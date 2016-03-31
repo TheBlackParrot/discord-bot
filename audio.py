@@ -1,8 +1,22 @@
-class VoiceObjInfo():
+# I can't figure out a queue system, nor can I figure out asyncio.
+'''
+import threading;
+
+class VoiceSystem():
 	def __init__(self):
-		# to allow the submitter to stop/etc.
-		self.submitter = None;
+		self.checkToMoveOn();
+
+		self.times = 0;
+
 		self.queue = VoiceQueue();
+
+	def checkToMoveOn(self):
+		self.times += 1;
+		print(self.times);
+
+		self.timer = threading.Timer(3.0, self.checkToMoveOn);
+		self.timer.start();
+'''
 
 class VoiceQueue():
 	def __init__(self):

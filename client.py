@@ -14,7 +14,7 @@ from slots import Slots;
 import settings as setting;
 from settings import Commands;
 from ctypes.util import find_library;
-from audio import VoiceObjInfo, VoiceQueue;
+# from audio import VoiceQueue, VoiceSystem;
 
 def signal_handler(signal, frame):
 	sys.exit(0);
@@ -38,8 +38,7 @@ if not discord.opus.is_loaded():
 
 VoiceObj = None;
 VoiceObjPlayer = None;
-voice_info = VoiceObjInfo();
-voice_queue = VoiceQueue();
+VoiceSubmitter = None;
 
 # e.g. to parse !tbp markov add
 class CommandMessage():
@@ -292,6 +291,7 @@ async def on_message(message):
 		elif command.command == "audio":
 			global VoiceObj;
 			global VoiceObjPlayer;
+			global VoiceSubmitter;
 
 			if command.subcommand == "join":
 				if not command.content:
@@ -316,9 +316,6 @@ async def on_message(message):
 				VoiceObj = await client.join_voice_channel(channel);
 
 			if command.subcommand == "play":
-				if len(voice_queue) > 0:
-					return;
-					
 				if not command.content:
 					return;
 
@@ -338,21 +335,36 @@ async def on_message(message):
 						except:
 							pass;
 
-						await client.send_message(message.channel, "Currently playing audio, please wait for it to finish.\nUse **queue** to queue something.");
+						await client.send_message(message.channel, "Currently playing audio, please wait for it to finish.");
 						return;
 
 				# create_ffmpeg_player doesn't seem very fleshed out at the moment?
 				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content);
 				VoiceObjPlayer.start();
 
-				voice_info.submitter = message.author.id;
+				VoiceSubmitter = message.author.id;
 
 				try:
 					await client.delete_message(message);
 				except:
 					pass;
 
-				await client.send_message(message.channel, "Playing **" + VoiceObjPlayer.title + "**");
+				msgContent = "Playing **" + VoiceObjPlayer.title + "**";
+				
+				msgContent += "\n\n**Uploader:** " + VoiceObjPlayer.uploader;
+
+				msgContent += "\n**Submitter:** " + message.author.mention;
+
+				m, s = divmod(VoiceObjPlayer.duration, 60);
+				h, m = divmod(m, 60);
+				msgContent += "\n**Duration:** " + ("%d:%02d:%02d" % (h, m, s));
+
+				msgContent += "\n**Views:** " + "{:,}".format(VoiceObjPlayer.views);
+
+				percentage = (VoiceObjPlayer.likes / (VoiceObjPlayer.likes + VoiceObjPlayer.dislikes)) * 100;
+				msgContent += "\n**Likes/Dislikes:** " + "{:,}".format(VoiceObjPlayer.likes) + " : " + "{:,}".format(VoiceObjPlayer.dislikes) + "*(" + str(round(percentage, 1)) + "% like this)*";
+				
+				await client.send_message(message.channel, msgContent);
 
 			if command.subcommand == "stop":
 				if not VoiceObj:
@@ -366,10 +378,20 @@ async def on_message(message):
 
 				if VoiceObjPlayer:
 					if VoiceObjPlayer.is_playing():
-						if voice_info.submitter == message.author.id:
+						if VoiceSubmitter == message.author.id or message.author.name in setting.ELEVATED_USERS:
 							await VoiceObjPlayer.stop();
 
+			if command.subcommand == "leave":
+				if not VoiceObj:
+					return;
 
+				if not VoiceObj.is_connected():
+					return;
+
+				if message.server.id != VoiceObj.channel.server.id:
+					return;
+
+				await VoiceObj.disconnect();
 
 def close():
 	client.logout();
