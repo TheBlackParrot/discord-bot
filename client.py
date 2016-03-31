@@ -26,6 +26,9 @@ getid.client = client;
 
 import json;
 
+from slots import Slots;
+slots = Slots();
+
 import settings as setting;
 from settings import Commands;
 cmds = Commands();
@@ -75,10 +78,21 @@ except FileNotFoundError:
 
 @client.event
 async def on_ready():
-	print('Logged in as:');
+	print('Logged in!');
+	print('----------');
+
 	print(client.user.name);
 	print(client.user.id);
-	invite = await client.accept_invite(setting.INVITE);
+
+	print('----------');
+	for i in range(0, len(setting.INVITES)):
+		try:
+			await client.accept_invite(setting.INVITES[i]);
+		except discord.errors.NotFound:
+			print("Invite " + setting.INVITES[i] + " has expired.");
+
+	if len(setting.INVITES) > 0:
+		print('----------');
 
 @client.event
 async def on_message(message):
@@ -94,12 +108,22 @@ async def on_message(message):
 
 		if command.command == "permit":
 			if message.author.name in setting.ELEVATED_USERS:
-				if message.channel.id not in permittedChannels:
-					permittedChannels.append(message.channel.id);
-					with open('permittedChannels.json', 'w') as file:
-						json.dump(permittedChannels, file);
+				if not command.subcommand:
+					if message.channel.id not in permittedChannels:
+						permittedChannels.append(message.channel.id);
+						with open('permittedChannels.json', 'w') as file:
+							json.dump(permittedChannels, file);
 
-					await client.send_message(message.channel, "Now permitted to use *" + message.channel.name + "*");
+						print("Can now respond in channel ID " + str(message.channel.id));
+						await client.send_message(message.channel, "Now permitted to use *" + message.channel.name + "*");
+				elif command.subcommand == "remove":
+					if message.channel.id in permittedChannels:
+						permittedChannels.remove(message.channel.id);
+						with open('permittedChannels.json', 'w') as file:
+							json.dump(permittedChannels, file);
+
+						print("Can no longer respond in channel ID " + str(message.channel.id));
+						await client.send_message(message.channel, "No longer permitted to use *" + message.channel.name + "*");
 
 		# THIS RESIDES HERE TO ALLOW PERMIT AND NOTHING ELSE
 		if message.channel.id not in permittedChannels:
@@ -204,6 +228,54 @@ async def on_message(message):
 					await client.send_message(message.channel, "Channel ID for *" + command.content + "* is **" + str(uid) + "**");
 				else:
 					await client.send_message(message.channel, "Channel could not be found.");
+
+		elif command.command == "slots":
+			mention = "";
+			if not message.channel.is_private:
+				mention = message.author.mention + "\n";
+
+			slots.initUser(message.author.id);
+
+			if command.subcommand == "spin":
+				if not command.content:
+					bet = 50;
+				else:
+					try:
+						bet = int(command.content);
+					except ValueError:
+						await client.send_message(message.channel, mention + "Invalid bet amount, not a number.");
+						return;
+
+				if bet < 50:
+					await client.send_message(message.channel, mention + "Invalid bet amount, bet must be higher than 50");
+					return;
+
+				if bet > slots.getTokens(message.author.id):
+					await client.send_message(message.channel, mention + "Invalid bet amount, bet must be lower than " + str(slots.getTokens(message.author.id)));
+					return;
+
+				output = slots.spin(message.author.id, bet=bet);
+
+				msgContent = "You are betting **" + str(bet) + " tokens**\n\n";
+				msgContent += ' '.join(output["values"]) + "\n\n";
+				if output["match_amount"] > 1:
+					msgContent += "You won **" + str(output["winnings"]) + " tokens!**";
+				else:
+					msgContent += "You did not win anything. :frowning:";
+
+				# i'd think python would update this in time, but apparently not
+				msgContent += "\nYou now have **" + str(slots.getTokens(message.author.id) + output["winnings"]) + " tokens**";
+
+				await client.send_message(message.channel, mention + msgContent);
+
+				slots.save(output);
+
+			if command.subcommand == "reset":
+				slots.resetUser(message.author.id);
+				await client.send_message(message.channel, mention + "Your tokens have been reset.");
+
+			if command.subcommand == "tokens":
+				await client.send_message(message.channel, mention + "You have **" + str(slots.getTokens(message.author.id)) + " tokens**.");
 
 def close():
 	client.logout();

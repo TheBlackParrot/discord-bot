@@ -2,7 +2,7 @@ CORPUS_FILENAME = "/path/to/corpus.txt";
 
 EMAIL = "user@example.com";
 PASSWORD = "discord_password";
-INVITE = "https://discord.gg/inviteid";
+INVITES = ["https://discord.gg/inviteid"];
 
 CMD_START = "!tbp";
 
@@ -38,7 +38,15 @@ class Commands():
 				"userID"
 			],
 
-			"permit": []
+			"permit": [
+				"remove"
+			],
+
+			"slots": [
+				"spin",
+				"tokens",
+				"reset"
+			]
 		};
 
 	def __str__(self):
