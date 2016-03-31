@@ -99,35 +99,36 @@ async def on_message(message):
 	if message.content.startswith(setting.CMD_START):
 		command = CommandMessage(message.content[len(setting.CMD_START):].strip());
 
-		if not command.command:
-			if message.channel.id in permittedChannels:
-				await client.send_message(message.channel, str(cmds));
+		if not message.channel.is_private:
+			if not command.command:
+				if message.channel.id in permittedChannels:
+					await client.send_message(message.channel, str(cmds));
+					return;
+				else:
+					return;
+
+			if command.command == "permit":
+				if message.author.name in setting.ELEVATED_USERS:
+					if not command.subcommand:
+						if message.channel.id not in permittedChannels:
+							permittedChannels.append(message.channel.id);
+							with open('permittedChannels.json', 'w') as file:
+								json.dump(permittedChannels, file);
+
+							print("Can now respond in channel ID " + str(message.channel.id));
+							await client.send_message(message.channel, "Now permitted to use *" + message.channel.name + "*");
+					elif command.subcommand == "remove":
+						if message.channel.id in permittedChannels:
+							permittedChannels.remove(message.channel.id);
+							with open('permittedChannels.json', 'w') as file:
+								json.dump(permittedChannels, file);
+
+							print("Can no longer respond in channel ID " + str(message.channel.id));
+							await client.send_message(message.channel, "No longer permitted to use *" + message.channel.name + "*");
+
+			# THIS RESIDES HERE TO ALLOW PERMIT AND NOTHING ELSE
+			if message.channel.id not in permittedChannels:
 				return;
-			else:
-				return;
-
-		if command.command == "permit":
-			if message.author.name in setting.ELEVATED_USERS:
-				if not command.subcommand:
-					if message.channel.id not in permittedChannels:
-						permittedChannels.append(message.channel.id);
-						with open('permittedChannels.json', 'w') as file:
-							json.dump(permittedChannels, file);
-
-						print("Can now respond in channel ID " + str(message.channel.id));
-						await client.send_message(message.channel, "Now permitted to use *" + message.channel.name + "*");
-				elif command.subcommand == "remove":
-					if message.channel.id in permittedChannels:
-						permittedChannels.remove(message.channel.id);
-						with open('permittedChannels.json', 'w') as file:
-							json.dump(permittedChannels, file);
-
-						print("Can no longer respond in channel ID " + str(message.channel.id));
-						await client.send_message(message.channel, "No longer permitted to use *" + message.channel.name + "*");
-
-		# THIS RESIDES HERE TO ALLOW PERMIT AND NOTHING ELSE
-		if message.channel.id not in permittedChannels:
-			return;
 
 		if command.command == "markov":
 			if not command.subcommand:
