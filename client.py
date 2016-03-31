@@ -14,7 +14,7 @@ from slots import Slots;
 import settings as setting;
 from settings import Commands;
 from ctypes.util import find_library;
-from audio import VoiceObjInfo;
+from audio import VoiceObjInfo, VoiceQueue;
 
 def signal_handler(signal, frame):
 	sys.exit(0);
@@ -39,6 +39,7 @@ if not discord.opus.is_loaded():
 VoiceObj = None;
 VoiceObjPlayer = None;
 voice_info = VoiceObjInfo();
+voice_queue = VoiceQueue();
 
 # e.g. to parse !tbp markov add
 class CommandMessage():
@@ -315,6 +316,9 @@ async def on_message(message):
 				VoiceObj = await client.join_voice_channel(channel);
 
 			if command.subcommand == "play":
+				if len(voice_queue) > 0:
+					return;
+					
 				if not command.content:
 					return;
 
@@ -334,7 +338,7 @@ async def on_message(message):
 						except:
 							pass;
 
-						await client.send_message(message.channel, "Currently playing audio, please wait for it to finish.");
+						await client.send_message(message.channel, "Currently playing audio, please wait for it to finish.\nUse **queue** to queue something.");
 						return;
 
 				# create_ffmpeg_player doesn't seem very fleshed out at the moment?
@@ -363,7 +367,7 @@ async def on_message(message):
 				if VoiceObjPlayer:
 					if VoiceObjPlayer.is_playing():
 						if voice_info.submitter == message.author.id:
-							VoiceObjPlayer.stop();
+							await VoiceObjPlayer.stop();
 
 
 
