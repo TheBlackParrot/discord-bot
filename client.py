@@ -139,6 +139,10 @@ async def on_message(message):
 			# THIS RESIDES HERE TO ALLOW PERMIT AND NOTHING ELSE
 			if message.channel.id not in permittedChannels:
 				return;
+		else:
+			if not command.command:
+				await client.send_message(message.channel, str(cmds));
+				return;
 
 		if command.command == "markov":
 			if not command.subcommand:

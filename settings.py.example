@@ -56,7 +56,7 @@ class Commands():
 			],
 
 			"8ball": [
-				"add"
+				"add",
 				"remove"
 			],
 
