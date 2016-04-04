@@ -430,8 +430,15 @@ async def on_message(message):
 					await client.send_message(message.channel, "*" + command.content + "* is not an 8 ball response.");
 
 		elif command.command == "avatar":
-			if message.author.avatar_url:
-				await client.send_message(message.channel, message.author.avatar_url);
+			if not message.mentions or message.channel.is_private:
+				if message.author.avatar_url:
+					await client.send_message(message.channel, message.author.avatar_url);
+			else:
+				output = "";
+				for i in range(0, len(message.mentions)):
+					output += message.mentions[i].avatar_url + "\n";
+
+				await client.send_message(message.channel, output);
 
 
 def close():
