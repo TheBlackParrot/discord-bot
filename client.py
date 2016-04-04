@@ -15,6 +15,7 @@ import settings as setting;
 from settings import Commands;
 from ctypes.util import find_library;
 # from audio import VoiceQueue, VoiceSystem;
+from rng import EightBall;
 
 def signal_handler(signal, frame):
 	sys.exit(0);
@@ -39,6 +40,8 @@ if not discord.opus.is_loaded():
 VoiceObj = None;
 VoiceObjPlayer = None;
 VoiceSubmitter = None;
+
+eightBall = EightBall();
 
 # e.g. to parse !tbp markov add
 class CommandMessage():
@@ -392,6 +395,40 @@ async def on_message(message):
 					return;
 
 				await VoiceObj.disconnect();
+
+		elif command.command == "8ball":
+			if not command.subcommand:
+				response = str(eightBall);
+				mention = (message.author.mention + " ") if not message.channel.is_private else "";
+
+				await client.send_message(message.channel, mention + ":crystal_ball: **" + response + "** :crystal_ball:");
+			
+			elif command.subcommand == "add":
+				if not command.content:
+					return;
+
+				if message.author.name not in setting.ELEVATED_USERS:
+					return;
+
+				eightBall.add(command.content);
+				await client.send_message(message.channel, "Added *" + command.content + "* as an 8 ball response.");
+
+			elif command.subcommand == "remove":
+				if not command.content:
+					return;
+
+				if message.author.name not in setting.ELEVATED_USERS:
+					return;
+
+				if eightBall.remove(command.content):
+					await client.send_message(message.channel, "Removed *" + command.content + "* from the 8 ball responses.");
+				else:
+					await client.send_message(message.channel, "*" + command.content + "* is not an 8 ball response.");
+
+		elif command.command == "avatar":
+			if message.author.avatar_url:
+				await client.send_message(message.channel, message.author.avatar_url);
+
 
 def close():
 	client.logout();

@@ -46,7 +46,21 @@ class Commands():
 				"spin",
 				"tokens",
 				"reset"
-			]
+			],
+
+			"audio": [
+				"join",
+				"play",
+				"stop",
+				"leave"
+			],
+
+			"8ball": [
+				"add"
+				"remove"
+			],
+
+			"avatar": []
 		};
 
 	def __str__(self):
