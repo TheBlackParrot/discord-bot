@@ -16,6 +16,7 @@ from settings import Commands;
 from ctypes.util import find_library;
 # from audio import VoiceQueue, VoiceSystem;
 from rng import EightBall;
+from memes import Memes;
 
 def signal_handler(signal, frame):
 	sys.exit(0);
@@ -42,6 +43,8 @@ VoiceObjPlayer = None;
 VoiceSubmitter = None;
 
 eightBall = EightBall();
+
+memes = Memes();
 
 # e.g. to parse !tbp markov add
 class CommandMessage():
@@ -346,7 +349,7 @@ async def on_message(message):
 						return;
 
 				# create_ffmpeg_player doesn't seem very fleshed out at the moment?
-				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content);
+				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content, options=setting.AUDIO_OPTIONS_AFTER);
 				VoiceObjPlayer.start();
 
 				VoiceSubmitter = message.author.id;
@@ -358,7 +361,8 @@ async def on_message(message):
 
 				msgContent = "Playing **" + VoiceObjPlayer.title + "**";
 				
-				msgContent += "\n\n**Uploader:** " + VoiceObjPlayer.uploader;
+				if VoiceObjPlayer.uploader:
+					msgContent += "\n\n**Uploader:** " + VoiceObjPlayer.uploader;
 
 				msgContent += "\n**Submitter:** " + message.author.mention;
 
@@ -366,10 +370,15 @@ async def on_message(message):
 				h, m = divmod(m, 60);
 				msgContent += "\n**Duration:** " + ("%d:%02d:%02d" % (h, m, s));
 
-				msgContent += "\n**Views:** " + "{:,}".format(VoiceObjPlayer.views);
+				if VoiceObjPlayer.views:
+					msgContent += "\n**Views:** " + "{:,}".format(VoiceObjPlayer.views);
 
-				percentage = (VoiceObjPlayer.likes / (VoiceObjPlayer.likes + VoiceObjPlayer.dislikes)) * 100;
-				msgContent += "\n**Likes/Dislikes:** " + "{:,}".format(VoiceObjPlayer.likes) + " : " + "{:,}".format(VoiceObjPlayer.dislikes) + "*(" + str(round(percentage, 1)) + "% like this)*";
+				if VoiceObjPlayer.likes:
+					if VoiceObjPlayer.dislikes:
+						percentage = (VoiceObjPlayer.likes / (VoiceObjPlayer.likes + VoiceObjPlayer.dislikes)) * 100;
+						msgContent += "\n**Likes/Dislikes:** " + "{:,}".format(VoiceObjPlayer.likes) + " : " + "{:,}".format(VoiceObjPlayer.dislikes) + "*(" + str(round(percentage, 1)) + "% like this)*";
+					else:
+						msgContent += "\n**Likes:** " + "{:,}".format(VoiceObjPlayer.likes);
 				
 				await client.send_message(message.channel, msgContent);
 
@@ -440,6 +449,46 @@ async def on_message(message):
 
 				await client.send_message(message.channel, output);
 
+		elif command.command == "meme":
+			if not command.subcommand and command.content:
+				template = command.content.split(" ", maxsplit=1)[0];
+				if template not in memes.data:
+					return;
+
+				inputs = command.content.split("line:");
+
+				lines = [];
+				for i in range(1, len(inputs)):
+					if len(lines) >= 2:
+						break;
+
+					line = inputs[i].strip();
+					if line:
+						lines.append(line);
+
+				if not len(lines):
+					return;
+				elif len(lines) == 1:
+					output = memes.generate(template, top_line=lines[0]);
+				elif len(lines) == 2:
+					output = memes.generate(template, top_line=lines[0], bottom_line=lines[1]);
+
+				await client.send_message(message.channel, output);
+
+			elif command.subcommand == "list":
+				if not command.content:
+					await client.send_message(message.channel, "Please enter a letter/number to list templates, all templates cannot be listed at once.");
+					return;
+
+				char = command.content[0].lower();
+
+				output = [];
+				for key in memes.keys():
+					if key[0] == char:
+						output.append(key);
+
+				if len(output):
+					await client.send_message(message.channel, "**The following templates are available:**\n*" + ", ".join(output) + "*");
 
 def close():
 	client.logout();
