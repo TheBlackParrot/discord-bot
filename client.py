@@ -15,6 +15,7 @@ import settings as setting;
 from settings import Commands;
 from ctypes.util import find_library;
 # from audio import VoiceQueue, VoiceSystem;
+from audio import VoiceSettings;
 from rng import EightBall;
 from memes import Memes;
 
@@ -41,6 +42,7 @@ if not discord.opus.is_loaded():
 VoiceObj = None;
 VoiceObjPlayer = None;
 VoiceSubmitter = None;
+vset = VoiceSettings();
 
 eightBall = EightBall();
 
@@ -110,12 +112,32 @@ async def on_ready():
 @client.event
 async def on_message(message):
 	if message.content.startswith(setting.CMD_START):
+		if message.channel.is_private and setting.DISABLE_DM:
+			return;
+			
 		command = CommandMessage(message.content[len(setting.CMD_START):].strip());
+
+		default_output = str(cmds);
+		default_output += "\n\n:pencil: **Syntax:** " + setting.CMD_START + " [command] *[subcommand] [content]*";
+
+		if not message.channel.is_private:
+			tmp = [];
+
+			for i in range(0, len(setting.ELEVATED_USERS)):
+				username = setting.ELEVATED_USERS[i];
+
+				if getid.findUserByName(username, message.server):
+					tmp.append(username);
+
+			if len(tmp) > 0:
+				default_output += "\n\n:white_check_mark: **Elevated Users:** " + ', '.join(tmp);
+
+		default_output += "\n\nhttps://github.com/TheBlackParrot/discord-bot";
 
 		if not message.channel.is_private:
 			if not command.command:
 				if message.channel.id in permittedChannels:
-					await client.send_message(message.channel, str(cmds));
+					await client.send_message(message.channel, default_output);
 					return;
 				else:
 					return;
@@ -144,7 +166,7 @@ async def on_message(message):
 				return;
 		else:
 			if not command.command:
-				await client.send_message(message.channel, str(cmds));
+				await client.send_message(message.channel, default_output);
 				return;
 
 		if command.command == "markov":
@@ -303,6 +325,8 @@ async def on_message(message):
 			global VoiceObjPlayer;
 			global VoiceSubmitter;
 
+			global VoiceSettings;
+
 			if command.subcommand == "join":
 				if not command.content:
 					return;
@@ -325,7 +349,7 @@ async def on_message(message):
 
 				VoiceObj = await client.join_voice_channel(channel);
 
-			if command.subcommand == "play":
+			elif command.subcommand == "play":
 				if not command.content:
 					return;
 
@@ -349,7 +373,7 @@ async def on_message(message):
 						return;
 
 				# create_ffmpeg_player doesn't seem very fleshed out at the moment?
-				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content, options=setting.AUDIO_OPTIONS_AFTER);
+				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content, options=str(vset));
 				VoiceObjPlayer.start();
 
 				VoiceSubmitter = message.author.id;
@@ -382,7 +406,7 @@ async def on_message(message):
 				
 				await client.send_message(message.channel, msgContent);
 
-			if command.subcommand == "stop":
+			elif command.subcommand == "stop":
 				if not VoiceObj:
 					return;
 
@@ -397,7 +421,7 @@ async def on_message(message):
 						if VoiceSubmitter == message.author.id or message.author.name in setting.ELEVATED_USERS:
 							await VoiceObjPlayer.stop();
 
-			if command.subcommand == "leave":
+			elif command.subcommand == "leave":
 				if not VoiceObj:
 					return;
 
@@ -408,6 +432,33 @@ async def on_message(message):
 					return;
 
 				await VoiceObj.disconnect();
+
+			elif command.subcommand == "setting":
+				if message.author.name not in setting.ELEVATED_USERS:
+					return;
+
+				add = "";
+				if VoiceObjPlayer:
+					if VoiceObjPlayer.is_playing():
+						add = "\n\nSettings will not be applied until the audio is restarted.";
+
+				if not command.content:
+					await client.send_message(message.channel, "**Available settings:**\n*volume, pitch, tempo*" + add);
+					return;
+
+				if command.content:
+					parts = command.content.split(" ");
+
+					if len(parts) < 2:
+						return;
+
+					set = parts[0];
+					value = float(parts[1]);
+
+					new = vset.update(set, value);
+
+					if new:
+						await client.send_message(message.channel, "Updated *" + set + "* to *" + str(new) + "*" + add);
 
 		elif command.command == "8ball":
 			if not command.subcommand:

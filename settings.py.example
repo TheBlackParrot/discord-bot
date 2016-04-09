@@ -4,13 +4,13 @@ EMAIL = "user@example.com";
 PASSWORD = "discord_password";
 INVITES = ["https://discord.gg/inviteid"];
 
+DISABLE_DM = False;
+
 CMD_START = "!tbp";
 
 PHRASES_URL = "http://phrases.example.com/?raw=1";
 
 ELEVATED_USERS = ["DiscordUser10293", "DiscordUser10294"];
-
-AUDIO_OPTIONS_AFTER = "-af \"volume=0.66\"";
 
 class Commands():
 	'''
@@ -54,7 +54,8 @@ class Commands():
 				"join",
 				"play",
 				"stop",
-				"leave"
+				"leave",
+				"setting"
 			],
 
 			"8ball": [
@@ -62,15 +63,24 @@ class Commands():
 				"remove"
 			],
 
-			"avatar": []
+			"avatar": [],
+
+			"meme": [
+				"list"
+			]
 		};
 
 	def __str__(self):
 		output = ""
 		for cmd, sublist in self.commands.items():
-			output += cmd + ":\n";
-			output += ', '.join(i for i in sublist);
-			output += "\n";
+			output += "**" + cmd + "**:\n";
+			
+			if len(sublist) > 0:
+				output += ', '.join(i for i in sublist);
+			else:
+				output += "*No subcommands available.*";
+
+			output += "\n\n";
 
 		return output.strip();
 

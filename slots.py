@@ -20,16 +20,11 @@ class Slots():
 			":horse:",
 			":earth_americas:",
 			":moneybag:",
-			":football:",
 			":high_heel:",
 			":rocket:",
 			":100:",
-			":ok:",
 			":moyai:",
-			":oncoming_automobile:",
 			":eggplant:",
-			":beer:",
-			":japanese_goblin:"
 		];
 
 	def __getitem__(self, value):

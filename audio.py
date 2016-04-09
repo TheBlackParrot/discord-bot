@@ -1,3 +1,33 @@
+class VoiceSettings():
+	def __init__(self):
+		self.volume = 0.66;
+		self.tempo = 1;
+		self.pitch = 1;
+
+	def __str__(self):
+		filters = [];
+
+		filters.append("volume=" + str(self.volume));
+		filters.append("atempo=" + str(self.tempo / self.pitch));
+		filters.append("asetrate=" + str(self.pitch * 44100));
+
+		return '-af "' + ','.join(filters) + '"';
+
+	def update(self, setting, value):
+		if setting == "pitch":
+			self.pitch = max(0.25, min(value, 3));
+			return self.pitch;
+
+		if setting == "tempo":
+			self.tempo = max(0.5, min(value, 2));
+			return self.tempo;
+
+		if setting == "volume":
+			self.volume = max(0.05, min(value, 3));
+			return self.volume;
+
+		return False;
+
 # I can't figure out a queue system, nor can I figure out asyncio.
 '''
 import threading;
@@ -16,7 +46,6 @@ class VoiceSystem():
 
 		self.timer = threading.Timer(3.0, self.checkToMoveOn);
 		self.timer.start();
-'''
 
 class VoiceQueue():
 	def __init__(self):
@@ -61,3 +90,4 @@ class VoiceQueue():
 			return self.queue.pop(0);
 
 		return self.queue[0];
+'''
