@@ -55,7 +55,8 @@ class Commands():
 				"play",
 				"stop",
 				"leave",
-				"setting"
+				"setting",
+				"debug"
 			],
 
 			"8ball": [

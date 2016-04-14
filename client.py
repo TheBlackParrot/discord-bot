@@ -15,9 +15,10 @@ import settings as setting;
 from settings import Commands;
 from ctypes.util import find_library;
 # from audio import VoiceQueue, VoiceSystem;
-from audio import VoiceSettings;
+from audio import VoiceSettings, getYTDLInfo;
 from rng import EightBall;
 from memes import Memes;
+import math;
 
 def signal_handler(signal, frame):
 	sys.exit(0);
@@ -372,8 +373,45 @@ async def on_message(message):
 						await client.send_message(message.channel, "Currently playing audio, please wait for it to finish.");
 						return;
 
-				# create_ffmpeg_player doesn't seem very fleshed out at the moment?
-				VoiceObjPlayer = await VoiceObj.create_ytdl_player(command.content, options=str(vset));
+				# TODO: normalize this crap
+				linkInfo = getYTDLInfo(command.content);
+				url = None;
+				codec = None;
+
+				if "format" not in linkInfo:
+					if "url" in linkInfo["info"]:
+						url = linkInfo["info"]["url"];
+
+						if "acodec" in linkInfo["info"]:
+							codec = linkInfo["info"]["acodec"];
+						elif "ext" in linkInfo["info"]:
+							codec = linkInfo["info"]["ext"];
+
+					else:
+						await client.send_message(message.channel, "No stream URL could be found, probably an unsupported service.");
+						return;		
+				else:
+					if "url" in linkInfo["format"]:
+						url = linkInfo["format"]["url"];
+
+						if "acodec" in linkInfo["format"]:
+							codec = linkInfo["format"]["acodec"];
+						elif "ext" in linkInfo["format"]:
+							codec = linkInfo["format"]["ext"];
+
+					else:
+						await client.send_message(message.channel, "No stream URL could be found, probably an unsupported service.");
+						return;				
+
+				if not url or not codec:
+					return;
+
+				if codec == "opus":
+					vset.update("rate", 48000);
+				else:
+					vset.update("rate", 44100);
+
+				VoiceObjPlayer = VoiceObj.create_ffmpeg_player(url, options=str(vset));
 				VoiceObjPlayer.start();
 
 				VoiceSubmitter = message.author.id;
@@ -383,26 +421,31 @@ async def on_message(message):
 				except:
 					pass;
 
-				msgContent = "Playing **" + VoiceObjPlayer.title + "**";
+				msgContent = "Playing **" + linkInfo["info"]["title"] + "**";
 				
-				if VoiceObjPlayer.uploader:
-					msgContent += "\n\n**Uploader:** " + VoiceObjPlayer.uploader;
+				if "uploader" in linkInfo["info"]:
+					msgContent += "\n\n**Uploader:** " + linkInfo["info"]["uploader"];
 
 				msgContent += "\n**Submitter:** " + message.author.mention;
 
-				m, s = divmod(VoiceObjPlayer.duration, 60);
+				m, s = divmod(linkInfo["info"]["duration"], 60);
 				h, m = divmod(m, 60);
 				msgContent += "\n**Duration:** " + ("%d:%02d:%02d" % (h, m, s));
 
-				if VoiceObjPlayer.views:
-					msgContent += "\n**Views:** " + "{:,}".format(VoiceObjPlayer.views);
+				if vset.tempo != 1:
+					m, s = divmod(math.ceil(linkInfo["info"]["duration"]/vset.tempo), 60);
+					h, m = divmod(m, 60);
+					msgContent += " *(adjusted: " + ("%d:%02d:%02d" % (h, m, s)) + ")*";
 
-				if VoiceObjPlayer.likes:
-					if VoiceObjPlayer.dislikes:
-						percentage = (VoiceObjPlayer.likes / (VoiceObjPlayer.likes + VoiceObjPlayer.dislikes)) * 100;
-						msgContent += "\n**Likes/Dislikes:** " + "{:,}".format(VoiceObjPlayer.likes) + " : " + "{:,}".format(VoiceObjPlayer.dislikes) + "*(" + str(round(percentage, 1)) + "% like this)*";
+				if "view_count" in linkInfo["info"]:
+					msgContent += "\n**Views:** " + "{:,}".format(linkInfo["info"]["view_count"]);
+
+				if "like_count" in linkInfo["info"]:
+					if "dislike_count" in linkInfo["info"]:
+						percentage = (linkInfo["info"]["like_count"] / (linkInfo["info"]["like_count"] + linkInfo["info"]["dislike_count"])) * 100;
+						msgContent += "\n**Likes/Dislikes:** " + "{:,}".format(linkInfo["info"]["like_count"]) + " : " + "{:,}".format(linkInfo["info"]["dislike_count"]) + "*(" + str(round(percentage, 1)) + "% like this)*";
 					else:
-						msgContent += "\n**Likes:** " + "{:,}".format(VoiceObjPlayer.likes);
+						msgContent += "\n**Likes:** " + "{:,}".format(linkInfo["info"]["like_count"]);
 				
 				await client.send_message(message.channel, msgContent);
 
@@ -459,6 +502,30 @@ async def on_message(message):
 
 					if new:
 						await client.send_message(message.channel, "Updated *" + set + "* to *" + str(new) + "*" + add);
+
+			elif command.subcommand == "debug":
+				if message.author.name not in setting.ELEVATED_USERS:
+					return;
+
+				output = [];
+
+				if VoiceObj:
+					output.append("in voice channel `" + VoiceObj.channel.name + "`");
+					if VoiceObjPlayer:
+						if VoiceObjPlayer.is_playing():
+							output.append("**Status**: playing");
+						else:
+							output.append("**Status**: not playing");
+					else:
+						output.append("**Status**: not playing");
+				else:
+					output.append("not in voice channel");
+
+				output.append("**Filters:** `" + str(vset) + "`");
+				output.append("**Settings:** volume = " + str(vset.volume) + ", pitch = " + str(vset.pitch) + ", tempo = " + str(vset.tempo));
+
+				await client.send_message(message.channel, "\n".join(output));
+
 
 		elif command.command == "8ball":
 			if not command.subcommand:
