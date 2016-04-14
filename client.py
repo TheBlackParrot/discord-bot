@@ -557,15 +557,28 @@ async def on_message(message):
 					await client.send_message(message.channel, "*" + command.content + "* is not an 8 ball response.");
 
 		elif command.command == "avatar":
-			if not message.mentions or message.channel.is_private:
-				if message.author.avatar_url:
-					await client.send_message(message.channel, message.author.avatar_url);
-			else:
-				output = "";
-				for i in range(0, len(message.mentions)):
-					output += message.mentions[i].avatar_url + "\n";
+			output = [];
 
-				await client.send_message(message.channel, output);
+			if message.channel.is_private or not command.content:
+				if message.author.avatar_url:
+					output.append(message.author.avatar_url);
+			else:
+				if message.mentions:
+					for i in range(0, len(message.mentions)):
+						output.append(message.mentions[i].avatar_url);
+
+				else:
+					names = message.content.split(" ");
+					for i in range(0, len(names)):
+						name = names[i];
+						user = getid.findUserByName(name, message.server);
+
+						if user:
+							if user.avatar_url:
+								output.append(user.avatar_url);
+
+			if len(output) > 0:
+				await client.send_message(message.channel, "\n".join(output).strip());
 
 		elif command.command == "meme":
 			if not command.subcommand and command.content:
