@@ -524,6 +524,9 @@ async def on_message(message):
 				output.append("**Filters:** `" + str(vset) + "`");
 				output.append("**Settings:** volume = " + str(vset.volume) + ", pitch = " + str(vset.pitch) + ", tempo = " + str(vset.tempo));
 
+				if vset.tempo / vset.pitch < 0.5 or vset.tempo / vset.pitch > 2:
+					output.append(":warning: filter `atempo` is outside the required range of `0.5 - 2`");
+
 				await client.send_message(message.channel, "\n".join(output));
 
 
@@ -625,4 +628,11 @@ def close():
 	client.logout();
 atexit.register(close);
 
-client.run(setting.EMAIL, setting.PASSWORD);
+while True:
+	if not client.is_logged_in:
+		try:
+			client.run(setting.EMAIL, setting.PASSWORD);
+		except:
+			pass;
+
+	time.sleep(10);
