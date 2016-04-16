@@ -428,14 +428,15 @@ async def on_message(message):
 
 				msgContent += "\n**Submitter:** " + message.author.mention;
 
-				m, s = divmod(linkInfo["info"]["duration"], 60);
-				h, m = divmod(m, 60);
-				msgContent += "\n**Duration:** " + ("%d:%02d:%02d" % (h, m, s));
-
-				if vset.tempo != 1:
-					m, s = divmod(math.ceil(linkInfo["info"]["duration"]/vset.tempo), 60);
+				if "duration" in linkInfo["info"]:
+					m, s = divmod(linkInfo["info"]["duration"], 60);
 					h, m = divmod(m, 60);
-					msgContent += " *(adjusted: " + ("%d:%02d:%02d" % (h, m, s)) + ")*";
+					msgContent += "\n**Duration:** " + ("%d:%02d:%02d" % (h, m, s));
+
+					if vset.tempo != 1:
+						m, s = divmod(math.ceil(linkInfo["info"]["duration"]/vset.tempo), 60);
+						h, m = divmod(m, 60);
+						msgContent += " *(adjusted: " + ("%d:%02d:%02d" % (h, m, s)) + ")*";
 
 				if "view_count" in linkInfo["info"]:
 					msgContent += "\n**Views:** " + "{:,}".format(linkInfo["info"]["view_count"]);
@@ -462,7 +463,7 @@ async def on_message(message):
 				if VoiceObjPlayer:
 					if VoiceObjPlayer.is_playing():
 						if VoiceSubmitter == message.author.id or message.author.name in setting.ELEVATED_USERS:
-							await VoiceObjPlayer.stop();
+							VoiceObjPlayer.stop();
 
 			elif command.subcommand == "leave":
 				if not VoiceObj:

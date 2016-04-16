@@ -48,7 +48,9 @@ def getYTDLInfo(url, get_format=True):
 	ydl = youtube_dl.YoutubeDL(opts)
 	info = ydl.extract_info(url, download=False);
 
-	formats = info.pop("formats");
+	formats = None;
+	if "formats" in info:
+		formats = info.pop("formats");
 
 	best = {
 		"bitrate": 0,
